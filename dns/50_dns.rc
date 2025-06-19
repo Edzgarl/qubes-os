@@ -1,0 +1,42 @@
+#!/bin/bash
+
+###  à mettre dans /rw/config/rc.local.d/
+
+# --- Début Configuration ---
+CORP_SEARCH="domain1.com"
+CORP_SEARCH2="domain2.local"
+CORP_DNS1="10.*.*.1"
+CORP_DNS2="10.*.*.2" # Ajoutez d'autres lignes 'nameserver' si nécessaire
+# --- Fin Configuration ---
+
+RESOLV_CONF="/etc/resolv.conf"
+MARKER="# DNS Entreprise ajouté par rc.local.d"
+
+# Attendre un court instant que le réseau soit potentiellement mieux établi (optionnel mais parfois utile)
+sleep 2
+
+# Vérifier si nos lignes sont déjà présentes (pour éviter de les ajouter plusieurs fois)
+if grep -qF -- "$MARKER" "$RESOLV_CONF"; then
+    exit 0 # Déjà configuré, on ne fait rien
+fi
+
+# Créer le nouveau contenu en préfixant nos lignes à l'ancien contenu
+{
+    echo "$MARKER"
+    echo "search $CORP_SEARCH"
+    echo "nameserver $CORP_DNS1"
+    if [ -n "$CORP_DNS2" ]; then # Ajoute le second DNS seulement s'il est défini
+       echo "nameserver $CORP_DNS2"
+    fi
+    echo "search $CORP_SEARCH2"
+    echo "# --- Configuration originale ci-dessous ---"
+    # On ajoute l'ancien contenu après nos lignes
+    cat "$RESOLV_CONF"
+} > /tmp/resolv.conf.new
+
+# Remplacer l'ancien fichier par le nouveau
+# Utiliser cat > au lieu de mv pour préserver les permissions/contextes SELinux éventuels
+cat /tmp/resolv.conf.new > "$RESOLV_CONF"
+rm /tmp/resolv.conf.new
+
+exit 0
