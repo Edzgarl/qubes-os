@@ -1,5 +1,0 @@
-search domain1.com
-nameserver 10.*.*.1
-nameserver 10.*.*.2
-search domain2.local
-
